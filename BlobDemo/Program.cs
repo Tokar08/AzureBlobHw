@@ -20,5 +20,22 @@ string path = "";
         { "Location", "Forest" }, 
     }
 );*/
-await blobService.DeleteBlob(container, "bear.jpg");
+//await blobService.DeleteBlob(container, "bear.jpg");
+/*var sas = await blobService.GetSAS(container, "fox.jpg");
+Console.WriteLine(sas);*/
+//await blobService.DownloadBlob(container, "fox.jpg");
+
+
+for(int i = 0; i < 5; i++)
+{
+    File.Copy(Path.Combine(path, "bear.jpg"), Path.Combine(path, $"bear{i}.jpg"));
+    await blobService.AddBlob(container, Path.Combine(path, $"bear{i}.jpg"));
+}
+
+await blobService.DisplayBlobs(container);
+
+await blobService.DeleteMultipleBlobs(container, 
+    Enumerable.Range(0, 5).Select(i => $"bear{i}.jpg"));
+
+Console.WriteLine(new string('-', 40));
 await blobService.DisplayBlobs(container);
