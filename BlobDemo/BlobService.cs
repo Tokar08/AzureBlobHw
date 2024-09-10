@@ -1,4 +1,6 @@
-﻿using Azure.Storage.Blobs;
+﻿using System.Text;
+using System.Text.Json;
+using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using Azure.Storage.Sas;
@@ -116,4 +118,102 @@ internal class BlobService
 
         await blobBatchClient.DeleteBlobsAsync(uris);
     }
+    
+    
+    public async Task AddObjectAsync<T>(T obj, string fileName, BlobContainerClient container)
+   {
+       try
+       {
+           var json = JsonSerializer.Serialize(obj);
+           BlobClient blobClient = container.GetBlobClient(fileName);
+
+           using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+           await blobClient.UploadAsync(stream, overwrite: true);
+
+           Console.ForegroundColor = ConsoleColor.Green;
+           Console.WriteLine($"{fileName} of type {typeof(T).Name} was added!");
+           Console.ResetColor();
+       }
+       catch (Exception ex)
+       {
+           Console.ForegroundColor = ConsoleColor.Red;
+           Console.WriteLine($"Failed to add {fileName}: {ex.Message}");
+           Console.ResetColor();
+       }
+   }
+
+   public async Task AddObjectsAsync<T>(IEnumerable<T> objs, string fileName, BlobContainerClient container)
+   {
+       try
+       {
+           var json = JsonSerializer.Serialize(objs);
+           BlobClient blobClient = container.GetBlobClient(fileName);
+
+           using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+           await blobClient.UploadAsync(stream, overwrite: true);
+
+           Console.ForegroundColor = ConsoleColor.Green;
+           Console.WriteLine($"{fileName} of type {typeof(T).Name} was added!");
+           Console.ResetColor();
+       }
+       catch (Exception ex)
+       {
+           Console.ForegroundColor = ConsoleColor.Red;
+           Console.WriteLine($"Failed to add {fileName}: {ex.Message}");
+           Console.ResetColor();
+       }
+   }
+
+
+   public async Task<T> DownloadObjectAsync<T>(string fileName, BlobContainerClient container)
+   {
+       try
+       {
+           BlobClient blobClient = container.GetBlobClient(fileName);
+           var response = await blobClient.DownloadAsync();
+
+           using var reader = new StreamReader(response.Value.Content);
+           string json = await reader.ReadToEndAsync();
+           T? obj = JsonSerializer.Deserialize<T>(json);
+
+           Console.ForegroundColor = ConsoleColor.DarkYellow;
+           Console.WriteLine($"{fileName} of type {typeof(T).Name} was downloaded!");
+           Console.ResetColor();
+           return obj;
+       
+       }
+       catch (Exception ex)
+       {
+           Console.ForegroundColor = ConsoleColor.Red;
+           Console.WriteLine($"Error downloading object: {ex.Message}");
+           Console.ResetColor();
+           return default;
+       }
+   }
+
+   public async Task<IEnumerable<T>> DownloadObjectsAsync<T>(string fileName, BlobContainerClient container)
+   {
+       try
+       {
+           BlobClient blobClient = container.GetBlobClient(fileName);
+           var response = await blobClient.DownloadAsync();
+
+           using var reader = new StreamReader(response.Value.Content);
+           string json = await reader.ReadToEndAsync();
+
+           IEnumerable<T>? objs = JsonSerializer.Deserialize<IEnumerable<T>>(json);
+
+           Console.ForegroundColor = ConsoleColor.DarkYellow;
+           Console.WriteLine($"{fileName} of type {typeof(T).Name} was downloaded!");
+           Console.ResetColor();
+           return objs ?? Enumerable.Empty<T>();
+       }
+       catch (Exception ex)
+       {
+           Console.ForegroundColor = ConsoleColor.Red;
+           Console.WriteLine($"Error downloading objects: {ex.Message}");
+           Console.ResetColor();
+           return Enumerable.Empty<T>();
+       }
+   }
 }
